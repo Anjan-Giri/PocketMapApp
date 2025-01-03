@@ -1,0 +1,145 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using PocketMapApp.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+<h3>Register</h3>
+
+<EditForm Model="@registerModel" OnValidSubmit="HandleRegistration">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <div class="form-group">
+        <label>Username:</label>
+        <InputText @bind-Value="registerModel.Username" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>Password:</label>
+        <InputText type="password" @bind-Value="registerModel.Password" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Preferred Currency:</label>
+        <InputSelect @bind-Value="registerModel.PreferredCurrency" class="form-control">
+            <option value="">Select a currency...</option>
+            <option value="NPR">Nepali Rupees (NPR)</option>
+            <option value="USD">US Dollar (USD)</option>
+            <option value="EUR">Euro (EUR)</option>
+            <option value="GBP">British Pound (GBP)</option>
+            <option value="JPY">Japanese Yen (JPY)</option>
+            <option value="CNY">Chinese Yuan (CNY)</option>
+            <option value="INR">Indian Rupee (INR)</option>
+            <option value="AUD">Australian Dollar (AUD)</option>
+            <option value="CAD">Canadian Dollar (CAD)</option>
+        </InputSelect>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Register</button>
+</EditForm>
+
+@code {
+    private RegisterModel registerModel = new();
+    private string errorMessage;
+
+    private async Task HandleRegistration()
+    {
+        try
+        {
+            errorMessage = null;
+            if (string.IsNullOrEmpty(registerModel.PreferredCurrency))
+            {
+                errorMessage = "Please select a preferred currency";
+                return;
+            }
+
+            var result = await AuthService.RegisterUser(
+                registerModel.Username,
+                registerModel.Password,
+                registerModel.PreferredCurrency);
+
+            if (result)
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                errorMessage = "Username already exists";
+            }
+        }
+        catch (DbUpdateException dbEx)
+        {
+            var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+            errorMessage = $"Database error: {innerMessage}";
+            Console.WriteLine($"Full error: {dbEx}");
+        }
+        catch (Exception ex)
+        {
+            var innermost = ex;
+            while (innermost.InnerException != null)
+            {
+                innermost = innermost.InnerException;
+            }
+
+            errorMessage = $"Error: {innermost.Message}";
+            Console.WriteLine($"Full error chain: {ex}");
+        }
+    }
+    // private async Task HandleRegistration()
+    // {
+    //     try
+    //     {
+    //         errorMessage = null;
+
+    //         if (string.IsNullOrEmpty(registerModel.PreferredCurrency))
+    //         {
+    //             errorMessage = "Please select a preferred currency";
+    //             return;
+    //         }
+    //         Console.WriteLine($"Attempting to register user: {registerModel.Username}");
+
+    //         var result = await AuthService.RegisterUser(
+    //             registerModel.Username,
+    //             registerModel.Password,
+    //             registerModel.PreferredCurrency);
+
+    //         if (result)
+    //         {
+    //             NavigationManager.NavigateTo("/login");
+    //         }
+    //         else
+    //         {
+    //             errorMessage = "Username already exists";
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         errorMessage = "An error occurred during registration. Please try again.";
+    //         Console.WriteLine($"Registration error: {ex}");
+
+    //         errorMessage = $"Registration error: {ex.Message}";
+    //         Console.WriteLine($"Registration error: {ex.Message}");
+    //         Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    //     }
+    // }
+
+    public class RegisterModel
+    {
+        [Required]
+        [StringLength(50, MinimumLength = 3)]
+        public string Username { get; set; }
+
+        [Required]
+        [StringLength(100, MinimumLength = 6)]
+        public string Password { get; set; }
+
+        [Required(ErrorMessage = "Please select a preferred currency")]
+        public string PreferredCurrency { get; set; }
+    }
+}

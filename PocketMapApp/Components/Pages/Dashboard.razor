@@ -1,0 +1,12 @@
+﻿@page "/dashboard"
+@inject NavigationManager NavigationManager
+@using PocketMapApp.Services
+@inject AuthStateService AuthState
+
+<h3>Welcome, @AuthState.CurrentUser?.Username!</h3>
+
+<h3>Dashboard</h3>
+
+@code {
+
+}

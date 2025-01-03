@@ -1,0 +1,90 @@
+﻿@page "/add-debt"
+@using PocketMapApp.Services
+@inject DebtService DebtService
+@inject AuthStateService AuthState
+@inject NavigationManager NavigationManager
+@using System.ComponentModel.DataAnnotations
+@using PocketMapApp.Models
+
+<h3>Add Debt</h3>
+
+<EditForm Model="@debtModel" OnValidSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <div class="form-group mb-3">
+        <label>Source:</label>
+        <InputText @bind-Value="debtModel.Source" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Amount (@AuthState.CurrentUser?.PreferredCurrency):</label>
+        <InputNumber @bind-Value="debtModel.Amount" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Due Date:</label>
+        <InputDate @bind-Value="debtModel.DueDate" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Notes:</label>
+        <InputTextArea @bind-Value="debtModel.Notes" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Debt</button>
+</EditForm>
+
+@code {
+    private DebtModel debtModel = new();
+    private string errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            var debt = new Debt
+                {
+                    UserId = AuthState.CurrentUser.Id,
+                    Source = debtModel.Source,
+                    Amount = debtModel.Amount,
+                    DueDate = debtModel.DueDate,
+                    Notes = debtModel.Notes
+                };
+
+            var (success, error) = await DebtService.AddDebt(debt);
+            if (success)
+            {
+                NavigationManager.NavigateTo("/dashboard");
+            }
+            else
+            {
+                errorMessage = error;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    public class DebtModel
+    {
+        [Required]
+        public string Source { get; set; }
+
+        [Required]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
+        public decimal Amount { get; set; }
+
+        [Required]
+        public DateTime DueDate { get; set; } = DateTime.Today;
+
+        public string Notes { get; set; }
+    }
+}

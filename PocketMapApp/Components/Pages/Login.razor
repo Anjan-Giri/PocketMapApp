@@ -1,0 +1,80 @@
+﻿@page "/login"
+@using PocketMapApp.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@using System.ComponentModel.DataAnnotations
+
+<h3>Login</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>Username:</label>
+        <InputText @bind-Value="loginModel.Username" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label>Password:</label>
+        <InputText type="password" @bind-Value="loginModel.Password" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Login</button>
+</EditForm>
+
+@code {
+    private LoginModel loginModel = new(); //new instance of loginmodel for storing form data
+    private string errorMessage;
+
+    //inject authstateservice which manages user authentication
+
+    [Inject]
+
+    private AuthStateService AuthState { get; set; }
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            errorMessage = null; // Clear any previous error
+
+            //calling authservice login method
+            var user = await AuthService.LoginUser(
+                loginModel.Username,
+                loginModel.Password);
+
+            if (user != null)
+            {
+                AuthState.SetUser(user); // if login is successful authstate is updated
+                NavigationManager.NavigateTo("/dashboard"); //redirected to dashboard page after successful login
+            }
+            else
+            {
+                errorMessage = "Invalid username or password";
+            }
+        }
+        catch (Exception ex)
+        {
+            //logging error for debugging
+            errorMessage = "An error occurred during login. Please try again.";
+            Console.WriteLine($"Login error: {ex}");
+        }
+    }
+
+    //form data
+    public class LoginModel
+    {
+        //required ensures that the fields cannot be empty
+        [Required]
+        public string Username { get; set; }
+
+        [Required]
+        public string Password { get; set; }
+    }
+}

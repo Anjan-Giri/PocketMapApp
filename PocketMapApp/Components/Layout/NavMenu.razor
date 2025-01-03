@@ -1,27 +1,88 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using PocketMapApp.Services
+
+@inject AuthStateService AuthState
+@implements IDisposable
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">PocketMapApp</a>
+        <a class="navbar-brand" href="">YourApp</a>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div>
     <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+        @if (AuthState.CurrentUser == null)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="oi oi-home" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    <span class="oi oi-account-login" aria-hidden="true"></span> Login
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="register">
+                    <span class="oi oi-person" aria-hidden="true"></span> Register
+                </NavLink>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="dashboard" Match="NavLinkMatch.All">
+                    <span class="oi oi-dashboard" aria-hidden="true"></span> Dashboard
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="add-transaction">
+                    <span class="oi oi-plus" aria-hidden="true"></span> Add Transaction
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="add-debt">
+                    <span class="oi oi-plus" aria-hidden="true"></span> Add Debt
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="transactionHistory">
+                    <span class="oi oi-person" aria-hidden="true"></span> Transaction History
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="debtDetail">
+                    <span class="oi oi-person" aria-hidden="true"></span> Debt Details
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <button class="nav-link" @onclick="HandleLogout">
+                    <span class="oi oi-account-logout" aria-hidden="true"></span> Logout
+                </button>
+            </div>
+        }
     </nav>
 </div>
+
+@code {
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+
+    protected override void OnInitialized()
+    {
+        AuthState.OnAuthStateChanged += StateHasChanged;
+    }
+
+    private void HandleLogout()
+    {
+        AuthState.Logout();
+        NavigationManager.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnAuthStateChanged -= StateHasChanged;
+    }
+}

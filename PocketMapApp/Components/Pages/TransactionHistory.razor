@@ -1,0 +1,170 @@
+﻿@page "/transactionHistory"
+@using PocketMapApp.Services
+@using PocketMapApp.Models
+@using PocketMapApp.Data
+@using Microsoft.EntityFrameworkCore
+@inject TransactionService TransactionService
+@inject DatabaseContext DatabaseContext
+@inject AuthStateService AuthState
+
+<div class="container mt-4">
+    <h2>Transaction History</h2>
+
+    <!-- Filter section -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <label>Type:</label>
+            <select class="form-select" @bind="selectedType">
+                <option value="">All Types</option>
+                <option value="@TransactionType.Credit">Credit</option>
+                <option value="@TransactionType.Debit">Debit</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label>Date Range:</label>
+            <select class="form-select" @bind="dateRange">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label>Tag:</label>
+            <select class="form-select" @bind="selectedTag">
+                <option value="">All Tags</option>
+                @foreach (var tag in availableTags)
+                {
+                    <option value="@tag">@tag</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label>Sort By:</label>
+            <select class="form-select" @bind="sortBy">
+                <option value="date_desc">Date (Newest First)</option>
+                <option value="date_asc">Date (Oldest First)</option>
+                <option value="amount_desc">Amount (Highest First)</option>
+                <option value="amount_asc">Amount (Lowest First)</option>
+            </select>
+        </div>
+    </div>
+
+
+    <!-- transactions table -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Tags</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var transaction in filteredTransactions)
+                {
+                    <tr class="@(transaction.Type == TransactionType.Credit ? "table-success" : "table-danger")">
+                        <td>@transaction.Date.ToShortDateString()</td>
+                        <td>@transaction.Title</td>
+                        <td>@transaction.Type</td>
+                        <td>@transaction.Amount @AuthState.CurrentUser?.PreferredCurrency</td>
+                        <td>
+                            @foreach (var tag in transaction.Tags)
+                            {
+                                <span class="badge bg-secondary me-1">@tag</span>
+                            }
+                        </td>
+                        <td>@transaction.Notes</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+
+    private List<Transaction> allTransactions = new();
+    private List<Transaction> filteredTransactions = new();
+    private List<string> availableTags = new();
+    private string selectedType = "";
+    private string dateRange = "month";
+    private string selectedTag = "";
+    private string sortBy = "date_desc";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactions();
+        ExtractAvailableTags();
+        ApplyFilters();
+    }
+
+    private async Task LoadTransactions()
+    {
+        allTransactions = await DatabaseContext.Transactions
+            .Where(t => t.UserId == AuthState.CurrentUser.Id)
+            .OrderByDescending(t => t.Date)
+            .ToListAsync();
+    }
+
+    private void ExtractAvailableTags()
+    {
+        availableTags = allTransactions
+            .SelectMany(t => t.Tags)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToList();
+    }
+
+    private void ApplyFilters()
+    {
+        var query = allTransactions.AsQueryable();
+
+        //type filter
+        if (!string.IsNullOrEmpty(selectedType))
+        {
+            var type = Enum.Parse<TransactionType>(selectedType);
+            query = query.Where(t => t.Type == type);
+        }
+
+        //date range
+        var today = DateTime.Today;
+        query = dateRange switch
+        {
+            "today" => query.Where(t => t.Date.Date == today),
+            "week" => query.Where(t => t.Date.Date >= today.AddDays(-7)),
+            "month" => query.Where(t => t.Date.Date >= today.AddMonths(-1)),
+            "year" => query.Where(t => t.Date.Date >= today.AddYears(-1)),
+            _ => query
+        };
+
+        //tag filter
+        if (!string.IsNullOrEmpty(selectedTag))
+        {
+            query = query.Where(t => t.Tags.Contains(selectedTag));
+        }
+
+        //sorting
+        query = sortBy switch
+        {
+            "date_asc" => query.OrderBy(t => t.Date),
+            "date_desc" => query.OrderByDescending(t => t.Date),
+            "amount_asc" => query.OrderBy(t => t.Amount),
+            "amount_desc" => query.OrderByDescending(t => t.Amount),
+            _ => query.OrderByDescending(t => t.Date)
+        };
+
+        filteredTransactions = query.ToList();
+    }
+
+    protected override void OnParametersSet()
+    {
+        ApplyFilters();
+    }
+}

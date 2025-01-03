@@ -1,0 +1,129 @@
+﻿@page "/add-transaction"
+@using PocketMapApp.Services
+@inject TransactionService TransactionService
+@inject AuthStateService AuthState
+@inject NavigationManager NavigationManager
+@using System.ComponentModel.DataAnnotations
+@using PocketMapApp.Models
+
+<h3>Add Transaction</h3>
+
+<EditForm Model="@transactionModel" OnValidSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <div class="form-group mb-3">
+        <label>Title:</label>
+        <InputText @bind-Value="transactionModel.Title" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Amount (@AuthState.CurrentUser?.PreferredCurrency):</label>
+        <InputNumber @bind-Value="transactionModel.Amount" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Type:</label>
+        <InputSelect @bind-Value="transactionModel.Type" class="form-control">
+            <option value="@TransactionType.Credit">Credit</option>
+            <option value="@TransactionType.Debit">Debit</option>
+        </InputSelect>
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Date:</label>
+        <InputDate @bind-Value="transactionModel.Date" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Tags:</label>
+        @foreach (var tag in DefaultTags)
+        {
+            <div class="form-check">
+                <InputCheckbox @bind-Value="selectedTags[tag]" class="form-check-input" />
+                <label class="form-check-label">@tag</label>
+            </div>
+        }
+    </div>
+
+    <div class="form-group mb-3">
+        <label>Notes:</label>
+        <InputTextArea @bind-Value="transactionModel.Notes" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Transaction</button>
+</EditForm>
+
+@code {
+    private TransactionModel transactionModel = new();
+    private string errorMessage;
+    private Dictionary<string, bool> selectedTags = new();
+
+    private List<string> DefaultTags = new()
+    {
+        "Monthly", "Food", "Drinks", "Clothes", "Gadgets",
+        "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
+    };
+
+    protected override void OnInitialized()
+    {
+        foreach (var tag in DefaultTags)
+        {
+            selectedTags[tag] = false;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            var transaction = new Transaction
+                {
+                    UserId = AuthState.CurrentUser.Id,
+                    Title = transactionModel.Title,
+                    Amount = transactionModel.Amount,
+                    Type = transactionModel.Type,
+                    Date = transactionModel.Date,
+                    Notes = transactionModel.Notes,
+                    Tags = selectedTags.Where(t => t.Value).Select(t => t.Key).ToList()
+                };
+
+            var (success, error) = await TransactionService.AddTransaction(transaction);
+            if (success)
+            {
+                NavigationManager.NavigateTo("/dashboard");
+            }
+            else
+            {
+                errorMessage = error;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    public class TransactionModel
+    {
+        [Required]
+        public string Title { get; set; }
+
+        [Required]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
+        public decimal Amount { get; set; }
+
+        [Required]
+        public TransactionType Type { get; set; }
+
+        [Required]
+        public DateTime Date { get; set; } = DateTime.Today;
+
+        public string Notes { get; set; }
+    }
+}

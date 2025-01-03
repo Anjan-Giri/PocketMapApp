@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using PocketMapApp.Services;
+using PocketMapApp.Data;
 
 namespace PocketMapApp
 {
@@ -19,7 +21,14 @@ namespace PocketMapApp
 #if DEBUG
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
+
 #endif
+
+            builder.Services.AddDbContext<DatabaseContext>(ServiceLifetime.Transient);
+            builder.Services.AddScoped<AuthService>();
+            builder.Services.AddScoped<AuthStateService>();
+            builder.Services.AddScoped<TransactionService>();
+            builder.Services.AddScoped<DebtService>();
 
             return builder.Build();
         }

@@ -96,8 +96,9 @@
 </div>
 
 @code {
-    private List<Debt> allDebts = new();
-    private List<Debt> filteredDebts = new();
+    private List<Debt> allDebts = new(); //stores debts of the user
+    private List<Debt> filteredDebts = new(); //filtered transactions
+    //values selected in filter
     private string selectedStatus = "";
     private string dateRange = "all";
     private string sortBy = "dueDate_asc";
@@ -105,29 +106,27 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (AuthState.CurrentUser == null)
-        {
-            NavigationManager.NavigateTo("/login");
-            return;
-        }
-
+        //calling the methods
         await LoadDebts();
         ApplyFilters();
     }
 
+    //method for loading debts from the database
     private async Task LoadDebts()
     {
         allDebts = await DatabaseContext.Debts
             .Where(d => d.UserId == AuthState.CurrentUser.Id)
-            .OrderBy(d => d.DueDate)
+            .OrderBy(d => d.DueDate) //odering by due date
             .ToListAsync();
     }
 
+    //method for checking the debts which are overdue
     private bool IsOverdue(Debt debt)
     {
-        return !debt.IsCleared && debt.DueDate.Date < DateTime.Today;
+        return !debt.IsCleared && debt.DueDate.Date < DateTime.Today; //debt is not cleated due date has passed
     }
 
+    //data row css of background, success for cleared, danger for overdue and warning for pending
     private string GetRowClass(Debt debt)
     {
         if (debt.IsCleared)
@@ -137,6 +136,27 @@
         return "table-warning";
     }
 
+    //method to clear debt
+    private async Task ClearDebt(int debtId)
+    {
+        var (success, error) = await DebtService.ClearDebt(debtId, AuthState.CurrentUser.Id); //calling cleardebt method
+
+        //debt cleared successfully
+        if (success)
+        {
+            //call methods
+            await LoadDebts();
+            ApplyFilters();
+            errorMessage = "";
+        }
+        //failure
+        else
+        {
+            errorMessage = error;
+        }
+    }
+
+    //method for filters
     private void ApplyFilters()
     {
         var query = allDebts.AsQueryable();
@@ -170,21 +190,6 @@
         };
 
         filteredDebts = query.ToList();
-    }
-
-    private async Task ClearDebt(int debtId)
-    {
-        var (success, error) = await DebtService.ClearDebt(debtId, AuthState.CurrentUser.Id);
-        if (success)
-        {
-            await LoadDebts();
-            ApplyFilters();
-            errorMessage = "";
-        }
-        else
-        {
-            errorMessage = error;
-        }
     }
 
     protected override void OnParametersSet()

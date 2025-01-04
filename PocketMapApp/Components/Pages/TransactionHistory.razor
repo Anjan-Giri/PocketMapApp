@@ -66,6 +66,7 @@
                 </tr>
             </thead>
             <tbody>
+                
                 @foreach (var transaction in filteredTransactions)
                 {
                     <tr class="@(transaction.Type == TransactionType.Credit ? "table-success" : "table-danger")">
@@ -89,9 +90,10 @@
 
 @code {
 
-    private List<Transaction> allTransactions = new();
-    private List<Transaction> filteredTransactions = new();
-    private List<string> availableTags = new();
+    private List<Transaction> allTransactions = new(); //stores all transactions of current user
+    private List<Transaction> filteredTransactions = new(); //filtered transactions
+    private List<string> availableTags = new(); //list of tags used in the transactions
+    //values selected in filter
     private string selectedType = "";
     private string dateRange = "month";
     private string selectedTag = "";
@@ -100,19 +102,22 @@
 
     protected override async Task OnInitializedAsync()
     {
+        //calling the methods
         await LoadTransactions();
         ExtractAvailableTags();
         ApplyFilters();
     }
 
+    //method to load transactions from the database
     private async Task LoadTransactions()
     {
         allTransactions = await DatabaseContext.Transactions
             .Where(t => t.UserId == AuthState.CurrentUser.Id)
-            .OrderByDescending(t => t.Date)
+            .OrderByDescending(t => t.Date) //date in descending order
             .ToListAsync();
     }
 
+    //method to exrract unique tags used in the transactions
     private void ExtractAvailableTags()
     {
         availableTags = allTransactions

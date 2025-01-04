@@ -2,7 +2,8 @@
 
 namespace PocketMapApp.Models
 {
-    public class registrationModel
+    //model for registration
+    public class RegisterModel
     {
         [Required]
         public string Username { get; set; }

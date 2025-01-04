@@ -1,5 +1,6 @@
 ﻿namespace PocketMapApp.Models
 {
+    //model for debt
     public class Debt
     {
         public int Id { get; set; }

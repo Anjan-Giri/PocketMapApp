@@ -1,40 +1,45 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PocketMapApp.Models;
+﻿using Microsoft.EntityFrameworkCore; //provide classes and methods to work with database
+using PocketMapApp.Models; //models
 
 namespace PocketMapApp.Data
 {
+    //inherits dbcontext for database connection and management
     public class DatabaseContext : DbContext
     {
+        //mapping entities to table
         public DbSet<User> Users { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Debt> Debts { get; set; }
 
+        //initialize database context
         public DatabaseContext()
         {
             SQLitePCL.Batteries_V2.Init();
-            //Database.EnsureDeleted(); // This will delete the existing database
-            Database.EnsureCreated(); // This will create a new database with the current schema
+            //Database.EnsureDeleted(); //deleting existing database (development)
+            Database.EnsureCreated(); //creating database
         }
 
+        //configuring the database
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (!optionsBuilder.IsConfigured)
+            if (!optionsBuilder.IsConfigured) //avoiding reconfiguring
             {
-                string dbPath = Path.Combine(FileSystem.AppDataDirectory, "app.db");
-                Directory.CreateDirectory(FileSystem.AppDataDirectory);
-                optionsBuilder.UseSqlite($"Filename={dbPath}");
+                string dbPath = Path.Combine(FileSystem.AppDataDirectory, "app.db"); //path to store database file
+                Directory.CreateDirectory(FileSystem.AppDataDirectory); //making sure the directory exists to store the file
+                optionsBuilder.UseSqlite($"Filename={dbPath}"); //giving file path
             }
         }
 
+        //datbase schema and entity
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+            base.OnModelCreating(modelBuilder); //calling base method to apply default configurations
 
-            // Configure User entity
+            //User entity
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasIndex(u => u.Username)
-                      .IsUnique();
+                      .IsUnique(); //username should be unique
 
                 entity.Property(u => u.Username)
                       .IsRequired()
@@ -48,17 +53,18 @@ namespace PocketMapApp.Data
                       .HasDefaultValue("USD");
             });
 
-            // Configure Transaction entity
+            //Transaction entity
             modelBuilder.Entity<Transaction>(entity =>
             {
+                //one-to-many relation between user and transaction
                 entity.HasOne(t => t.User)
                       .WithMany()
                       .HasForeignKey(t => t.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .OnDelete(DeleteBehavior.Cascade); //for deleting transaction when user is deleted
 
                 entity.Property(t => t.Title)
                       .IsRequired()
-                      .HasMaxLength(100);
+                      .HasMaxLength(100); //2 decimal places and 18 digits
 
                 entity.Property(t => t.Amount)
                       .IsRequired()
@@ -72,16 +78,17 @@ namespace PocketMapApp.Data
 
                 entity.Property(t => t.Tags)
                       .HasConversion(
-                          v => string.Join(',', v),
-                          v => string.IsNullOrEmpty(v)
+                          v => string.Join(',', v), //converting list to string
+                          v => string.IsNullOrEmpty(v) //converting to list when getting value
                               ? new List<string>()
                               : v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
                       );
             });
 
-            // Configure Debt entity
+            //Debt entity
             modelBuilder.Entity<Debt>(entity =>
             {
+                //one-to-many relation between user and debt
                 entity.HasOne(d => d.User)
                       .WithMany()
                       .HasForeignKey(d => d.UserId)

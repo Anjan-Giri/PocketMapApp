@@ -60,28 +60,32 @@
 </EditForm>
 
 @code {
-    private TransactionModel transactionModel = new();
-    private string errorMessage;
-    private Dictionary<string, bool> selectedTags = new();
+    private TransactionModel transactionModel = new(); //declare transactionmodel to store form data
+    private string errorMessage; //declare error message
+    private Dictionary<string, bool> selectedTags = new(); //declare dictionary to keep selected tag
 
+    //list of default tags
     private List<string> DefaultTags = new()
     {
         "Monthly", "Food", "Drinks", "Clothes", "Gadgets",
         "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
     };
 
+    //initialize selected tag dictionary
     protected override void OnInitialized()
     {
         foreach (var tag in DefaultTags)
         {
-            selectedTags[tag] = false;
+            selectedTags[tag] = false; //no tag is selected by default
         }
     }
 
+    //method to gandle submission of form
     private async Task HandleSubmit()
     {
         try
         {
+            //tranasaction object with provided values
             var transaction = new Transaction
                 {
                     UserId = AuthState.CurrentUser.Id,
@@ -90,19 +94,22 @@
                     Type = transactionModel.Type,
                     Date = transactionModel.Date,
                     Notes = transactionModel.Notes,
-                    Tags = selectedTags.Where(t => t.Value).Select(t => t.Key).ToList()
+                    Tags = selectedTags.Where(t => t.Value).Select(t => t.Key).ToList() //selects tags whose value is true an converts to list
                 };
 
-            var (success, error) = await TransactionService.AddTransaction(transaction);
+            var (success, error) = await TransactionService.AddTransaction(transaction); //calling add transaction method
+            //added successfully
             if (success)
             {
-                NavigationManager.NavigateTo("/dashboard");
+                NavigationManager.NavigateTo("/transactionHistory");
             }
+            //failure
             else
             {
                 errorMessage = error;
             }
         }
+        //exceptions
         catch (Exception ex)
         {
             errorMessage = ex.Message;

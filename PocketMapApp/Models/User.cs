@@ -1,5 +1,6 @@
 ﻿namespace PocketMapApp.Models
 {
+    //model for user
     public class User
     {
         public int Id { get; set; }

@@ -4,6 +4,8 @@
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @using Microsoft.EntityFrameworkCore
+@using PocketMapApp.Models
+
 <h3>Register</h3>
 
 <EditForm Model="@registerModel" OnValidSubmit="HandleRegistration">
@@ -45,40 +47,48 @@
 </EditForm>
 
 @code {
-    private RegisterModel registerModel = new();
-    private string errorMessage;
+    private RegisterModel registerModel = new(); //declare instance of register model to store form data
+    private string errorMessage; //declare error message
 
+    //method for handling registration
     private async Task HandleRegistration()
     {
         try
         {
-            errorMessage = null;
+            errorMessage = null; //clearing any existing error message
+
+            //checking if the value is null or empty
             if (string.IsNullOrEmpty(registerModel.PreferredCurrency))
             {
                 errorMessage = "Please select a preferred currency";
                 return;
             }
 
+            //calling register user method to register the user with provided details
             var result = await AuthService.RegisterUser(
                 registerModel.Username,
                 registerModel.Password,
                 registerModel.PreferredCurrency);
 
+            //if registration is successful
             if (result)
             {
                 NavigationManager.NavigateTo("/login");
             }
+            //error message
             else
             {
                 errorMessage = "Username already exists";
             }
         }
+        //logging any database related exceptions for debugging
         catch (DbUpdateException dbEx)
         {
             var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
             errorMessage = $"Database error: {innerMessage}";
             Console.WriteLine($"Full error: {dbEx}");
         }
+        //any general exceptions, innermost errors for debugging
         catch (Exception ex)
         {
             var innermost = ex;
@@ -129,17 +139,17 @@
     //     }
     // }
 
-    public class RegisterModel
-    {
-        [Required]
-        [StringLength(50, MinimumLength = 3)]
-        public string Username { get; set; }
+    // public class RegisterModel
+    // {
+    //     [Required]
+    //     [StringLength(50, MinimumLength = 3)]
+    //     public string Username { get; set; }
 
-        [Required]
-        [StringLength(100, MinimumLength = 6)]
-        public string Password { get; set; }
+    //     [Required]
+    //     [StringLength(100, MinimumLength = 6)]
+    //     public string Password { get; set; }
 
-        [Required(ErrorMessage = "Please select a preferred currency")]
-        public string PreferredCurrency { get; set; }
-    }
+    //     [Required(ErrorMessage = "Please select a preferred currency")]
+    //     public string PreferredCurrency { get; set; }
+    // }
 }

@@ -41,13 +41,15 @@
 </EditForm>
 
 @code {
-    private DebtModel debtModel = new();
-    private string errorMessage;
+    private DebtModel debtModel = new(); //declare debtmodel to store form data
+    private string errorMessage; //declare error message
 
+    //method for handling submission of the form
     private async Task HandleSubmit()
     {
         try
         {
+            //debt object with provided values
             var debt = new Debt
                 {
                     UserId = AuthState.CurrentUser.Id,
@@ -57,16 +59,19 @@
                     Notes = debtModel.Notes
                 };
 
-            var (success, error) = await DebtService.AddDebt(debt);
+            var (success, error) = await DebtService.AddDebt(debt); //calling adddebt method
+            //added successfully
             if (success)
             {
-                NavigationManager.NavigateTo("/dashboard");
+                NavigationManager.NavigateTo("/debtDetail");
             }
+            //failure
             else
             {
                 errorMessage = error;
             }
         }
+        //catching exceptions if any
         catch (Exception ex)
         {
             errorMessage = ex.Message;

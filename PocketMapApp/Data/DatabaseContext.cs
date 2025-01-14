@@ -73,15 +73,22 @@ namespace PocketMapApp.Data
                 entity.Property(t => t.Date)
                       .IsRequired();
 
+                entity.Property(t => t.Type)
+                      .IsRequired();
+
                 entity.Property(t => t.Notes)
-                      .HasMaxLength(500);
+                      .HasMaxLength(500)
+                      .IsRequired(false);
 
                 entity.Property(t => t.Tags)
                       .HasConversion(
-                          v => string.Join(',', v), //converting list to string
-                          v => string.IsNullOrEmpty(v) //converting to list when getting value
+                          v => string.Join(',', v ?? new List<string>()),
+                          v => string.IsNullOrEmpty(v)
                               ? new List<string>()
-                              : v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                              : v.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(tag => tag.Trim())
+                                .Where(tag => !string.IsNullOrEmpty(tag))
+                                .ToList()
                       );
             });
 
@@ -108,8 +115,13 @@ namespace PocketMapApp.Data
                 entity.Property(d => d.CreatedDate)
                       .IsRequired();
 
+                entity.Property(d => d.IsCleared)
+                      .IsRequired()
+                      .HasDefaultValue(false);
+
                 entity.Property(d => d.Notes)
-                      .HasMaxLength(500);
+                      .HasMaxLength(500)
+                      .IsRequired(false);
             });
         }
     }

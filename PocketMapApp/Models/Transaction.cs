@@ -29,7 +29,7 @@ namespace PocketMapApp.Models
         [MaxLength(500)]
         public string Notes { get; set; }
 
-        [NotMapped] //for not mapping directly to a column
+        //[NotMapped] //for not mapping directly to a column
         public List<string> Tags { get; set; } = new();
 
         [ForeignKey("UserId")]

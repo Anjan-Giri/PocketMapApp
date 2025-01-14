@@ -41,15 +41,24 @@
     </div>
 
     <div class="form-group mb-3">
-        <label>Tags:</label>
-        @foreach (var tag in DefaultTags)
-        {
-            <div class="form-check">
-                <InputCheckbox @bind-Value="selectedTags[tag]" class="form-check-input" />
-                <label class="form-check-label">@tag</label>
-            </div>
-        }
+        <label>Tag:</label>
+        <select class="form-control" value="@selectedTag" @onchange="OnTagSelectionChanged">
+            <option value="">Select a tag</option>
+            @foreach (var tag in DefaultTags)
+            {
+                <option value="@tag">@tag</option>
+            }
+            <option value="Other">Other</option>
+        </select>
     </div>
+
+    @if (showCustomTagInput)
+    {
+        <div class="form-group mb-3">
+            <label>Custom Tag:</label>
+            <input type="text" class="form-control" @bind="customTag" @bind:event="oninput" />
+        </div>
+    }
 
     <div class="form-group mb-3">
         <label>Notes:</label>
@@ -62,7 +71,10 @@
 @code {
     private TransactionModel transactionModel = new(); //declare transactionmodel to store form data
     private string errorMessage; //declare error message
-    private Dictionary<string, bool> selectedTags = new(); //declare dictionary to keep selected tag
+    //private Dictionary<string, bool> selectedTags = new(); //declare dictionary to keep selected tag
+    private string selectedTag = "";
+    private string customTag = "";
+    private bool showCustomTagInput = false;
 
     //list of default tags
     private List<string> DefaultTags = new()
@@ -72,12 +84,23 @@
     };
 
     //initialize selected tag dictionary
-    protected override void OnInitialized()
+    // protected override void OnInitialized()
+    // {
+    //     foreach (var tag in DefaultTags)
+    //     {
+    //         selectedTags[tag] = false; no tag is selected by default
+    //     }
+    // }
+
+    private void OnTagSelectionChanged(ChangeEventArgs e)
     {
-        foreach (var tag in DefaultTags)
+        selectedTag = e.Value?.ToString() ?? "";
+        showCustomTagInput = selectedTag == "Other";
+        if (!showCustomTagInput)
         {
-            selectedTags[tag] = false; //no tag is selected by default
+            customTag = ""; // Clear custom tag when a predefined tag is selected
         }
+        StateHasChanged(); // Ensure the UI updates
     }
 
     //method to gandle submission of form
@@ -85,6 +108,15 @@
     {
         try
         {
+            string finalTag = selectedTag == "Other" ? customTag : selectedTag;
+
+            // Validate custom tag if "Other" is selected
+            if (selectedTag == "Other" && string.IsNullOrWhiteSpace(customTag))
+            {
+                errorMessage = "Please enter a custom tag";
+                return;
+            }
+
             //tranasaction object with provided values
             var transaction = new Transaction
                 {
@@ -94,7 +126,8 @@
                     Type = transactionModel.Type,
                     Date = transactionModel.Date,
                     Notes = transactionModel.Notes,
-                    Tags = selectedTags.Where(t => t.Value).Select(t => t.Key).ToList() //selects tags whose value is true an converts to list
+                    //Tags = selectedTags.Where(t => t.Value).Select(t => t.Key).ToList() //selects tags whose value is true an converts to list
+                    Tags = new List<string> { finalTag }
                 };
 
             var (success, error) = await TransactionService.AddTransaction(transaction); //calling add transaction method
@@ -131,6 +164,7 @@
         [Required]
         public DateTime Date { get; set; } = DateTime.Today;
 
+        [StringLength(500)]
         public string Notes { get; set; }
     }
 }

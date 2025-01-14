@@ -1,12 +1,284 @@
 ﻿@page "/dashboard"
 @inject NavigationManager NavigationManager
 @using PocketMapApp.Services
+@using PocketMapApp.Models
+@using PocketMapApp.Data
+@using Microsoft.EntityFrameworkCore
+@inject TransactionService TransactionService
+@inject DatabaseContext DatabaseContext
 @inject AuthStateService AuthState
 
-<h3>Welcome, @AuthState.CurrentUser?.Username!</h3>
+<style>
+    .stat-card {
+        border-radius: 8px;
+        border: #000000 solid 2px;
+        padding-top: 15px;
+        padding-right: 15px;
+        padding-left: 15px;
+        height: auto;
+        position: relative;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
 
-<h3>Dashboard</h3>
+        .stat-card:hover, .number-card:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+        }
+
+        .stat-card h3 {
+            color: #001374;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-card h2 {
+            font-size: 20px;
+            font-weight: 400;
+            color: #060059;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+</style>
+
+<h3 class="py-4 text-black">Welcome, @AuthState.CurrentUser?.Username!</h3>
+<div class="dashboard-content">
+
+    <!-- Transaction Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card border-primary">
+                <h3>Balance</h3>
+                <h2>@currentBalance.ToString("C2") @AuthState.CurrentUser?.PreferredCurrency</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card border-success">
+                <h3 class="text-success">Credits</h3>
+                <h2>@totalCredits.ToString("C2") @AuthState.CurrentUser?.PreferredCurrency</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card border-danger">
+                <h3 class="text-danger">Debits</h3>
+                <h2>@totalDebits.ToString("C2") @AuthState.CurrentUser?.PreferredCurrency</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card border-primary">
+                <h3>Transactions Done</h3>
+                <h2>@totalTransactions</h2>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Debt Summary Cards -->
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="stat-card bg-warning border-light">
+                <h3 class="text-white">Pending Debt</h3>
+                <h2 class="text-white">@totalPendingDebt.ToString("C2") @AuthState.CurrentUser?.PreferredCurrency</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card bg-danger border-light">
+                <h3 class="text-white">Overdue Debt</h3>
+                <h2 class="text-white">@overdueAmount.ToString("C2") @AuthState.CurrentUser?.PreferredCurrency</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card bg-success border-light">
+                <h3 class="text-white">Cleared Debt</h3>
+                <h2 class="text-white">@totalClearedDebt.ToString("C2") @AuthState.CurrentUser?.PreferredCurrency</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Transactions Section -->
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">Top 5 Transactions</h5>
+                <select class="form-select w-auto" @onchange="OnFilterChanged">
+                    <option value="highest">Highest Transactions</option>
+                    <option value="lowest">Lowest Transactions</option>
+                </select>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in filteredTransactions)
+                        {
+                            <tr>
+                                <td>@transaction.Title</td>
+                                <td>@transaction.Amount.ToString("C2") @AuthState.CurrentUser?.PreferredCurrency</td>
+                                <td>@transaction.Type</td>
+                                <td>@transaction.Date.ToShortDateString()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Debts Section -->
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title">Pending Debts</h5>
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <input type="date" class="form-control" @bind="startDate" @bind:after="UpdateFilteredDebts" />
+                    </div>
+                    <div class="col-auto">
+                        <input type="date" class="form-control" @bind="endDate" @bind:after="UpdateFilteredDebts" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Amount</th>
+                            <th>Due Date</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var debt in filteredDebts)
+                        {
+                            <tr>
+                                <td>@debt.Source</td>
+                                <td>@debt.Amount.ToString("C2") @AuthState.CurrentUser?.PreferredCurrency</td>
+                                <td>@debt.DueDate.ToShortDateString()</td>
+                                <td>@debt.Notes</td>
+                            </tr>
+                        }
+                        @if (!filteredDebts.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center">No pending debts found in the selected date range</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
+    private List<Transaction> allTransactions = new();
+    private List<Debt> allDebts = new();
+    private decimal currentBalance;
+    private decimal totalCredits;
+    private decimal totalDebits;
+    private decimal totalPendingDebt;
+    private decimal totalClearedDebt;
+    private decimal overdueAmount;
+    private int totalTransactions;
 
+    private List<Transaction> filteredTransactions = new();
+    private string currentFilter = "highest";
+
+    private List<Debt> filteredDebts = new();
+    private DateTime? startDate;
+    private DateTime? endDate;
+
+    protected override void OnInitialized()
+    {
+        if (AuthState.CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState.CurrentUser != null)
+        {
+            await LoadData();
+            CalculateSummaries();
+            FilterTransactions();
+            UpdateFilteredDebts();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        allTransactions = await DatabaseContext.Transactions
+            .Where(t => t.UserId == AuthState.CurrentUser.Id)
+            .ToListAsync();
+
+        allDebts = await DatabaseContext.Debts
+            .Where(d => d.UserId == AuthState.CurrentUser.Id)
+            .ToListAsync();
+
+        currentBalance = await TransactionService.GetBalance(AuthState.CurrentUser.Id);
+        totalCredits = allTransactions
+            .Where(t => t.Type == TransactionType.Credit)
+            .Sum(t => t.Amount);
+        totalDebits = allTransactions
+            .Where(t => t.Type == TransactionType.Debit)
+            .Sum(t => t.Amount);
+
+        totalTransactions = allTransactions.Count;
+
+        // allDebts = await DatabaseContext.Debts
+        //     .Where(d => d.UserId == AuthState.CurrentUser.Id && !d.IsCleared)
+        //     .OrderBy(d => d.DueDate)
+        //     .ToListAsync();
+    }
+
+    private void FilterTransactions()
+    {
+        filteredTransactions = currentFilter == "highest"
+            ? allTransactions.OrderByDescending(t => t.Amount).Take(5).ToList()
+            : allTransactions.OrderBy(t => t.Amount).Take(5).ToList();
+    }
+
+    private void OnFilterChanged(ChangeEventArgs e)
+    {
+        currentFilter = e.Value?.ToString() ?? "highest";
+        FilterTransactions();
+    }
+
+    private void UpdateFilteredDebts()
+    {
+        filteredDebts = allDebts
+            .Where(d => (!startDate.HasValue || d.DueDate.Date >= startDate.Value.Date) &&
+                       (!endDate.HasValue || d.DueDate.Date <= endDate.Value.Date))
+            .ToList();
+    }
+
+    private void CalculateSummaries()
+    {
+        totalPendingDebt = allDebts
+            .Where(d => !d.IsCleared)
+            .Sum(d => d.Amount);
+
+        totalClearedDebt = allDebts
+            .Where(d => d.IsCleared)
+            .Sum(d => d.Amount);
+
+        overdueAmount = allDebts
+            .Where(d => !d.IsCleared && d.DueDate.Date < DateTime.Today)
+            .Sum(d => d.Amount);
+    }
 }

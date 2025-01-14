@@ -64,13 +64,32 @@ namespace PocketMapApp.Services
                 if (availableBalance < debt.Amount)
                     return (false, "Insufficient balance to clear debt");
 
-                debt.IsCleared = true; //marking debt as cleared
-                await _context.SaveChangesAsync(); //saving changes in the database
+                var debtPayment = new Transaction
+                {
+                    UserId = userId,
+                    Title = $"Debt cleared of {debt.Source}",
+                    Amount = debt.Amount,
+                    Type = TransactionType.Debit,
+                    Notes = debt.Notes,
+                    Date = DateTime.Now,
+                    Tags = new List<string> { "Debt" }
+                };
+
+                _context.Transactions.Add(debtPayment);
+                debt.IsCleared = true;
+
+                await _context.SaveChangesAsync();
                 return (true, null);
+            }
+            catch (DbUpdateException dbEx)
+            {
+                // Log or inspect the inner exception
+                var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+                return (false, $"Database error: {innerMessage}");
             }
             catch (Exception ex)
             {
-                return (false, ex.Message);
+                return (false, $"General error: {ex.Message}");
             }
         }
     }

@@ -14,25 +14,32 @@
     <!-- Filters -->
     <div class="row mb-4">
         <div class="col-md-3">
+            <label>Search:</label>
+            <input type="text" class="form-control" placeholder="Search by source..."
+                   @bind-value="searchText" @bind-value:event="oninput" @onchange="ApplyFilters" />
+        </div>
+        <div class="col-md-2">
             <label>Status:</label>
-            <select class="form-select" @bind="selectedStatus">
+            <select class="form-select" @bind="selectedStatus" @bind:after="ApplyFilters">
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="cleared">Cleared</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <label>Due Date Range:</label>
-            <select class="form-select" @bind="dateRange">
+            <select class="form-select" @bind="dateRange" @bind:after="ApplyFilters">
                 <option value="all">All Time</option>
                 <option value="overdue">Overdue</option>
+                <option value="today">Due Today</option>
                 <option value="thisWeek">Due This Week</option>
                 <option value="thisMonth">Due This Month</option>
+                <option value="nextMonth">Due Next Month</option>
             </select>
         </div>
         <div class="col-md-3">
             <label>Sort By:</label>
-            <select class="form-select" @bind="sortBy">
+            <select class="form-select" @bind="sortBy" @bind:after="ApplyFilters">
                 <option value="dueDate_asc">Due Date (Earliest First)</option>
                 <option value="dueDate_desc">Due Date (Latest First)</option>
                 <option value="amount_desc">Amount (Highest First)</option>
@@ -104,6 +111,8 @@
     private string sortBy = "dueDate_asc";
     private string errorMessage = "";
 
+    private string searchText = "";
+
     protected override async Task OnInitializedAsync()
     {
         //calling the methods
@@ -161,6 +170,13 @@
     {
         var query = allDebts.AsQueryable();
 
+        //search
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            query = query.Where(d => d.Source.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                                   d.Notes.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+        }
+
         //status
         query = selectedStatus switch
         {
@@ -169,15 +185,42 @@
             _ => query
         };
 
-        //date range
+        // date range
+        // var today = DateTime.Today;
+        // query = dateRange switch
+        // {
+        //     "overdue" => query.Where(d => !d.IsCleared && d.DueDate.Date < today),
+        //     "thisWeek" => query.Where(d => d.DueDate.Date >= today && d.DueDate.Date <= today.AddDays(7)),
+        //     "thisMonth" => query.Where(d => d.DueDate.Date >= today && d.DueDate.Date <= today.AddMonths(1)),
+        //     _ => query
+        // };
+
+        // Date range filter
         var today = DateTime.Today;
-        query = dateRange switch
+        switch (dateRange)
         {
-            "overdue" => query.Where(d => !d.IsCleared && d.DueDate.Date < today),
-            "thisWeek" => query.Where(d => d.DueDate.Date >= today && d.DueDate.Date <= today.AddDays(7)),
-            "thisMonth" => query.Where(d => d.DueDate.Date >= today && d.DueDate.Date <= today.AddMonths(1)),
-            _ => query
-        };
+            case "overdue":
+                query = query.Where(d => !d.IsCleared && d.DueDate.Date < today);
+                break;
+            case "today":
+                query = query.Where(d => d.DueDate.Date == today);
+                break;
+            case "thisWeek":
+                var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+                var endOfWeek = startOfWeek.AddDays(7);
+                query = query.Where(d => d.DueDate.Date >= startOfWeek && d.DueDate.Date < endOfWeek);
+                break;
+            case "thisMonth":
+                var startOfMonth = new DateTime(today.Year, today.Month, 1);
+                var endOfMonth = startOfMonth.AddMonths(1);
+                query = query.Where(d => d.DueDate.Date >= startOfMonth && d.DueDate.Date < endOfMonth);
+                break;
+            case "nextMonth":
+                var startOfNextMonth = new DateTime(today.Year, today.Month, 1).AddMonths(1);
+                var endOfNextMonth = startOfNextMonth.AddMonths(1);
+                query = query.Where(d => d.DueDate.Date >= startOfNextMonth && d.DueDate.Date < endOfNextMonth);
+                break;
+        }
 
         //sorting
         query = sortBy switch

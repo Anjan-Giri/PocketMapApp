@@ -11,7 +11,12 @@
     <h2>Transaction History</h2>
 
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-2">
+            <label>Search:</label>
+            <input type="text" class="form-control" placeholder="search ..."
+                   @bind-value="searchText" @bind-value:event="oninput" @onchange="ApplyFilters" />
+        </div>
+        <div class="col-md-2">
             <label>Type:</label>
             <select class="form-select" value="@selectedType" @onchange="@(e => FilterChanged("type", e.Value?.ToString()))">
                 <option value="">All Types</option>
@@ -19,7 +24,7 @@
                 <option value="Debit">Debit</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label>Date Range:</label>
             <select class="form-select" value="@dateRange" @onchange="@(e => FilterChanged("date", e.Value?.ToString()))">
                 <option value="all">All Time</option>
@@ -29,7 +34,7 @@
                 <option value="year">This Year</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label>Tag:</label>
             <select class="form-select" value="@selectedTag" @onchange="@(e => FilterChanged("tag", e.Value?.ToString()))">
                 <option value="">All Tags</option>
@@ -39,7 +44,7 @@
                 }
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label>Sort By:</label>
             <select class="form-select" value="@sortBy" @onchange="@(e => FilterChanged("sort", e.Value?.ToString()))">
                 <option value="date_desc">Date (Newest First)</option>
@@ -102,6 +107,8 @@
     private string selectedTag = "";
     private string sortBy = "date_desc";
 
+    private string searchText = "";
+
     protected override async Task OnInitializedAsync()
     {
         await LoadTransactions();
@@ -157,6 +164,12 @@
     {
         var query = allTransactions.AsQueryable();
 
+        // Search filter
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            query = query.Where(t => t.Title.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+        }
+
         // Type filter
         if (!string.IsNullOrEmpty(selectedType))
         {
@@ -165,15 +178,39 @@
         }
 
         // Date filter
+        // var today = DateTime.Today;
+        // query = dateRange switch
+        // {
+        //     "today" => query.Where(t => t.Date.Date == today),
+        //     "week" => query.Where(t => t.Date.Date >= today.AddDays(-(int)today.DayOfWeek).Date),  Start of current week (Sunday)
+        //     "month" => query.Where(t => t.Date.Date >= new DateTime(today.Year, today.Month, 1)),  Start of current month
+        //     "year" => query.Where(t => t.Date.Date >= new DateTime(today.Year, 1, 1)),  Start of current year
+        //     _ => query
+        // };
+
+        // Date filter
         var today = DateTime.Today;
-        query = dateRange switch
+        switch (dateRange)
         {
-            "today" => query.Where(t => t.Date.Date == today),
-            "week" => query.Where(t => t.Date.Date >= today.AddDays(-(int)today.DayOfWeek).Date),  // Start of current week (Sunday)
-            "month" => query.Where(t => t.Date.Date >= new DateTime(today.Year, today.Month, 1)),  // Start of current month
-            "year" => query.Where(t => t.Date.Date >= new DateTime(today.Year, 1, 1)),  // Start of current year
-            _ => query
-        };
+            case "today":
+                query = query.Where(t => t.Date.Date == today);
+                break;
+            case "week":
+                var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+                var endOfWeek = startOfWeek.AddDays(7);
+                query = query.Where(t => t.Date.Date >= startOfWeek && t.Date.Date < endOfWeek);
+                break;
+            case "month":
+                var startOfMonth = new DateTime(today.Year, today.Month, 1);
+                var endOfMonth = startOfMonth.AddMonths(1);
+                query = query.Where(t => t.Date.Date >= startOfMonth && t.Date.Date < endOfMonth);
+                break;
+            case "year":
+                var startOfYear = new DateTime(today.Year, 1, 1);
+                var endOfYear = startOfYear.AddYears(1);
+                query = query.Where(t => t.Date.Date >= startOfYear && t.Date.Date < endOfYear);
+                break;
+        }
 
         // Tag filter
         if (!string.IsNullOrEmpty(selectedTag))

@@ -4,36 +4,51 @@
 @inject NavigationManager NavigationManager
 @using System.ComponentModel.DataAnnotations
 
-<h3>Login</h3>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+    .textSize{
+        font-size: 15px;
+        color: #40004b;
+    }
+</style>
 
 @if (!string.IsNullOrEmpty(errorMessage))
 {
     <div class="alert alert-danger">@errorMessage</div>
 }
 
-<EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="form-container bg-white p-4 rounded shadow" style="width: 400px; max-width: 90%;">
+        <h3 class="text-center mb-4" style="color: #2e004f;">Login</h3>
 
-    <div class="form-group">
-        <label>Username:</label>
-        <InputText @bind-Value="loginModel.Username" class="form-control" />
+        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="mb-3">
+                <label class="form-label" style="color: #2e004f;">Username:</label>
+                <InputText @bind-Value="loginModel.Username" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" style="color: #2e004f;">Password:</label>
+                <InputText type="password" @bind-Value="loginModel.Password" class="form-control" />
+            </div>
+
+            <button type="submit" class="btn" style="background-color: #2e004f; color: white; width: 100%;">Login</button>
+
+            <h5 class="text-start mt-4 textSize" style="color: #2e004f;">
+                Don't have an account?
+                <NavLink href="/" class="text-primary text-decoration-none">
+                    Register Now!
+                </NavLink>
+            </h5>
+        </EditForm>
     </div>
-
-    <div class="form-group">
-        <label>Password:</label>
-        <InputText type="password" @bind-Value="loginModel.Password" class="form-control" />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Login</button>
-
-    <h5>
-        Don't have an account?  
-        <NavLink href="register">
-            Register Now!
-        </NavLink>
-    </h5>
-</EditForm>
+</div>
 
 @code {
     private LoginModel loginModel = new(); //new instance of loginmodel for storing form data

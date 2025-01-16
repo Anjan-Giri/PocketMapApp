@@ -24,6 +24,7 @@
         }
 </style>
 
+<!-- checking user -->
 @if (AuthState.CurrentUser != null)
 {
     <div class="top-row ps-3 navbar navbar-dark">
@@ -73,15 +74,18 @@
 
     protected override void OnInitialized()
     {
+        //when auth state is changed, StateHasChanged is called to re-render the component
         AuthState.OnAuthStateChanged += StateHasChanged;
     }
 
+    //method for logout
     private void HandleLogout()
     {
         AuthState.Logout();
         NavigationManager.NavigateTo("/");
     }
 
+    //method to prevent memory leaks when auth changes
     public void Dispose()
     {
         AuthState.OnAuthStateChanged -= StateHasChanged;

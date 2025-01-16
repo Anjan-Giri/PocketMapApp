@@ -4,6 +4,7 @@
 @implements IDisposable
 
 <div class="page">
+    <!-- checking authentication -->
     @if (AuthState.CurrentUser != null)
     {
         <div class="sidebar">
@@ -11,12 +12,6 @@
         </div>
     }
     <main>
-        <!--@if (AuthState.CurrentUser != null)
-        {
-            <div class="top-row px-4">
-                <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-            </div>
-        }-->
         <article class="content px-4">
             @Body
         </article>
@@ -26,11 +21,11 @@
 @code {
     protected override void OnInitialized()
     {
-        AuthState.OnAuthStateChanged += StateHasChanged;
+        AuthState.OnAuthStateChanged += StateHasChanged; //changing the state
     }
 
     public void Dispose()
     {
-        AuthState.OnAuthStateChanged -= StateHasChanged;
+        AuthState.OnAuthStateChanged -= StateHasChanged; //changing the state
     }
 }

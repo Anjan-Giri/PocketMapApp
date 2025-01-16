@@ -8,6 +8,7 @@ namespace PocketMapApp.Services
     {
         private readonly DatabaseContext _context;
 
+        //application's database context
         public DebtService(DatabaseContext context)
         {
             _context = context;
@@ -64,6 +65,7 @@ namespace PocketMapApp.Services
                 if (availableBalance < debt.Amount)
                     return (false, "Insufficient balance to clear debt");
 
+                //creating a new transaction for debt payment
                 var debtPayment = new Transaction
                 {
                     UserId = userId,
@@ -75,20 +77,21 @@ namespace PocketMapApp.Services
                     Tags = new List<string> { "Debt" }
                 };
 
-                _context.Transactions.Add(debtPayment);
-                debt.IsCleared = true;
+                _context.Transactions.Add(debtPayment); //adding the debtpayment transaction
+                debt.IsCleared = true; //setting debt cleared to true
 
-                await _context.SaveChangesAsync();
-                return (true, null);
+                await _context.SaveChangesAsync(); //saving to database
+                return (true, null); //returning success
             }
             catch (DbUpdateException dbEx)
             {
-                // Log or inspect the inner exception
+                //logging database specific inner exception for debugging
                 var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
                 return (false, $"Database error: {innerMessage}");
             }
             catch (Exception ex)
             {
+                //general errors
                 return (false, $"General error: {ex.Message}");
             }
         }

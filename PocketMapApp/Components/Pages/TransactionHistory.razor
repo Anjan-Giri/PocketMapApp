@@ -10,6 +10,7 @@
 <div class="container mt-4">
     <h2 class="mb-3">Transaction History</h2>
 
+    <!-- search and filters-->
     <div class="row mb-4">
         <div class="col-md-2">
             <label>Search:</label>
@@ -55,6 +56,7 @@
         </div>
     </div>
 
+    <!-- transaction details table -->
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
@@ -72,6 +74,7 @@
                 {
                     @foreach (var transaction in filteredTransactions)
                     {
+                        //green background for credit transactions and red one for debit transactions
                         <tr class="@(transaction.Type == TransactionType.Credit ? "table-success" : "table-danger")">
                             <td>@transaction.Date.ToShortDateString()</td>
                             <td>@transaction.Title</td>
@@ -80,7 +83,7 @@
                             <td>
                                 @foreach (var tag in transaction.Tags)
                                 {
-                                    <span class="badge bg-secondary me-1">@tag</span>
+                                    <span class="badge bg-secondary me-1">@tag</span> //displaying tags using badge
                                 }
                             </td>
                             <td>@transaction.Notes</td>
@@ -99,34 +102,41 @@
 </div>
 
 @code {
-    private List<Transaction> allTransactions = new();
-    private List<Transaction> filteredTransactions = new();
-    private List<string> availableTags = new();
+    private List<Transaction> allTransactions = new(); //stores transactions of the user
+    private List<Transaction> filteredTransactions = new(); // filtered transactions
+
+    private List<string> availableTags = new(); //stores tags
+
+    //variables for values selected in the filter
     private string selectedType = "";
     private string dateRange = "month";
     private string selectedTag = "";
     private string sortBy = "date_desc";
 
+    //search input
     private string searchText = "";
 
     protected override async Task OnInitializedAsync()
     {
+        //calling the methods
         await LoadTransactions();
         ExtractAvailableTags();
         ApplyFilters();
     }
 
+    //method for loading transactions from the database
     private async Task LoadTransactions()
     {
         if (AuthState.CurrentUser != null)
         {
             allTransactions = await DatabaseContext.Transactions
                 .Where(t => t.UserId == AuthState.CurrentUser.Id)
-                .OrderByDescending(t => t.Date)
+                .OrderByDescending(t => t.Date) //ordering by debt
                 .ToListAsync();
         }
     }
 
+    //method for getting tags of the transactions
     private void ExtractAvailableTags()
     {
         availableTags = allTransactions
@@ -136,6 +146,7 @@
             .ToList();
     }
 
+    //method for getting filter values
     private void FilterChanged(string filterType, string value)
     {
         if (value == null) return;
@@ -156,40 +167,32 @@
                 break;
         }
 
-        ApplyFilters();
-        StateHasChanged();
+        ApplyFilters(); //calling the apply filters method
+        StateHasChanged(); //changing the state
     }
 
+    //method for filters
     private void ApplyFilters()
     {
         var query = allTransactions.AsQueryable();
 
-        // Search filter
+        //search
         if (!string.IsNullOrWhiteSpace(searchText))
         {
             query = query.Where(t => t.Title.Contains(searchText, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Type filter
+        //type
         if (!string.IsNullOrEmpty(selectedType))
         {
             var type = Enum.Parse<TransactionType>(selectedType);
             query = query.Where(t => t.Type == type);
         }
 
-        // Date filter
-        // var today = DateTime.Today;
-        // query = dateRange switch
-        // {
-        //     "today" => query.Where(t => t.Date.Date == today),
-        //     "week" => query.Where(t => t.Date.Date >= today.AddDays(-(int)today.DayOfWeek).Date),  Start of current week (Sunday)
-        //     "month" => query.Where(t => t.Date.Date >= new DateTime(today.Year, today.Month, 1)),  Start of current month
-        //     "year" => query.Where(t => t.Date.Date >= new DateTime(today.Year, 1, 1)),  Start of current year
-        //     _ => query
-        // };
-
-        // Date filter
+        //date
         var today = DateTime.Today;
+
+        //using switch case for date filter
         switch (dateRange)
         {
             case "today":
@@ -212,13 +215,13 @@
                 break;
         }
 
-        // Tag filter
+        //tag
         if (!string.IsNullOrEmpty(selectedTag))
         {
             query = query.Where(t => t.Tags.Contains(selectedTag));
         }
 
-        // Sort
+        //sorting
         query = sortBy switch
         {
             "date_asc" => query.OrderBy(t => t.Date),
@@ -228,6 +231,6 @@
             _ => query.OrderByDescending(t => t.Date)
         };
 
-        filteredTransactions = query.ToList();
+        filteredTransactions = query.ToList(); //filtered transactions list
     }
 }

@@ -11,7 +11,7 @@
 <div class="container mt-4">
     <h2 class="mb-3">Debt Details</h2>
 
-    <!-- Filters -->
+    <!-- search and filters -->
     <div class="row mb-4">
         <div class="col-md-3">
             <label>Search:</label>
@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    <!-- Debts Table -->
+    <!-- debt details table -->
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
@@ -72,12 +72,13 @@
                             @debt.DueDate.ToShortDateString()
                             @if (IsOverdue(debt))
                             {
-                                <span class="badge bg-danger ms-2">Overdue</span>
+                                <span class="badge bg-danger ms-2">Overdue</span> //red background for overdue debts
                             }
                         </td>
                         <td>@debt.CreatedDate.ToShortDateString()</td>
                         <td>
-                            <span class="badge @(debt.IsCleared ? "bg-success" : "bg-warning")">
+                            <!-- green background for cleared debts and tellow for pending ones-->
+                            <span class="badge @(debt.IsCleared ? "bg-success" : "bg-warning")"> 
                                 @(debt.IsCleared ? "Cleared" : "Pending")
                             </span>
                         </td>
@@ -104,13 +105,15 @@
 
 @code {
     private List<Debt> allDebts = new(); //stores debts of the user
-    private List<Debt> filteredDebts = new(); //filtered transactions
-    //values selected in filter
+    private List<Debt> filteredDebts = new(); //filtered debts
+
+    //variables for values selected in filter
     private string selectedStatus = "";
     private string dateRange = "all";
     private string sortBy = "dueDate_asc";
     private string errorMessage = "";
 
+    //search input
     private string searchText = "";
 
     protected override async Task OnInitializedAsync()
@@ -185,18 +188,10 @@
             _ => query
         };
 
-        // date range
-        // var today = DateTime.Today;
-        // query = dateRange switch
-        // {
-        //     "overdue" => query.Where(d => !d.IsCleared && d.DueDate.Date < today),
-        //     "thisWeek" => query.Where(d => d.DueDate.Date >= today && d.DueDate.Date <= today.AddDays(7)),
-        //     "thisMonth" => query.Where(d => d.DueDate.Date >= today && d.DueDate.Date <= today.AddMonths(1)),
-        //     _ => query
-        // };
-
-        // Date range filter
+        //date range
         var today = DateTime.Today;
+
+        //using switch case for date filter
         switch (dateRange)
         {
             case "overdue":
@@ -232,7 +227,7 @@
             _ => query.OrderBy(d => d.DueDate)
         };
 
-        filteredDebts = query.ToList();
+        filteredDebts = query.ToList(); //filtered debts list
     }
 
     protected override void OnParametersSet()

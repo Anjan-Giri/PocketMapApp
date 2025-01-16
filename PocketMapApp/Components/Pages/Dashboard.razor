@@ -47,7 +47,7 @@
 <h3 class="py-4 text-black">Welcome, @AuthState.CurrentUser?.Username!</h3>
 <div class="dashboard-content">
 
-    <!-- Transaction Summary Cards -->
+    <!-- transaction summaries -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="stat-card border-primary">
@@ -76,7 +76,7 @@
     </div>
 
 
-    <!-- Debt Summary Cards -->
+    <!-- debt summaries -->
     <div class="row mb-5">
         <div class="col-md-4">
             <div class="stat-card bg-warning border-light">
@@ -98,16 +98,18 @@
         </div>
     </div>
 
-    <!-- Top Transactions Section -->
+    <!-- top transactions -->
     <div class="card mb-5">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="card-title mb-0">Top 5 Transactions</h5>
+                <!-- filter for top transactions -->
                 <select class="form-select w-auto" @onchange="OnFilterChanged">
                     <option value="highest">Highest Transactions</option>
                     <option value="lowest">Lowest Transactions</option>
                 </select>
             </div>
+            <!-- table of transactions -->
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -134,11 +136,12 @@
         </div>
     </div>
 
-    <!-- Pending Debts Section -->
+    <!-- pending debts -->
     <div class="card mb-5">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="card-title">Pending Debts</h5>
+                <!-- filter for date range -->
                 <div class="row g-2">
                     <div class="col-auto">
                         <input type="date" class="form-control" @bind="startDate" @bind:after="UpdateFilteredDebts" />
@@ -149,6 +152,7 @@
                 </div>
             </div>
 
+            <!-- table for pending debts -->
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
@@ -181,6 +185,7 @@
         </div>
     </div>
 
+    <!-- total transactions -->
     <div class="row mb-5 align-items-start justify-content-start">
         <div class="col-md-3">
             <div class="stat-card border-dark">
@@ -192,6 +197,7 @@
 </div>
 
 @code {
+    //fields for storing data
     private List<Transaction> allTransactions = new();
     private List<Debt> allDebts = new();
     private decimal currentBalance;
@@ -203,13 +209,16 @@
     private int totalTransactions;
     private decimal netFlow;
 
+    //fields for transaction filtering
     private List<Transaction> filteredTransactions = new();
     private string currentFilter = "highest";
 
+    //fields for debt filtering
     private List<Debt> filteredDebts = new();
     private DateTime? startDate;
     private DateTime? endDate;
 
+    //checking authentication
     protected override void OnInitialized()
     {
         if (AuthState.CurrentUser == null)
@@ -219,10 +228,12 @@
         }
     }
 
+    //method to load data
     protected override async Task OnInitializedAsync()
     {
         if (AuthState.CurrentUser != null)
         {
+            //calling the methods
             await LoadData();
             CalculateSummaries();
             FilterTransactions();
@@ -230,30 +241,32 @@
         }
     }
 
+    //loading data from the database
     private async Task LoadData()
     {
+        //getting all transactions
         allTransactions = await DatabaseContext.Transactions
             .Where(t => t.UserId == AuthState.CurrentUser.Id)
             .ToListAsync();
 
+        //getting all debts
         allDebts = await DatabaseContext.Debts
             .Where(d => d.UserId == AuthState.CurrentUser.Id)
             .ToListAsync();
 
+        //calculating balance
         currentBalance = await TransactionService.GetBalance(AuthState.CurrentUser.Id);
+        //getting total credits
         totalCredits = allTransactions
             .Where(t => t.Type == TransactionType.Credit)
             .Sum(t => t.Amount);
+        //getting total debits
         totalDebits = allTransactions
             .Where(t => t.Type == TransactionType.Debit)
             .Sum(t => t.Amount);
-
-        // allDebts = await DatabaseContext.Debts
-        //     .Where(d => d.UserId == AuthState.CurrentUser.Id && !d.IsCleared)
-        //     .OrderBy(d => d.DueDate)
-        //     .ToListAsync();
     }
 
+    //filtering transaction
     private void FilterTransactions()
     {
         filteredTransactions = currentFilter == "highest"
@@ -261,12 +274,14 @@
             : allTransactions.OrderBy(t => t.Amount).Take(5).ToList();
     }
 
+    //handling change in filter
     private void OnFilterChanged(ChangeEventArgs e)
     {
         currentFilter = e.Value?.ToString() ?? "highest";
         FilterTransactions();
     }
 
+    //updating pending debts based on filter
     private void UpdateFilteredDebts()
     {
         filteredDebts = allDebts
@@ -275,24 +290,28 @@
             .ToList();
     }
 
+    //calculating summary values
     private void CalculateSummaries()
     {
+        //pending debt total
         totalPendingDebt = allDebts
             .Where(d => !d.IsCleared)
             .Sum(d => d.Amount);
 
+        //cleared debt total
         totalClearedDebt = allDebts
             .Where(d => d.IsCleared)
             .Sum(d => d.Amount);
 
+        //overdue amount total
         overdueAmount = allDebts
             .Where(d => !d.IsCleared && d.DueDate.Date < DateTime.Today)
             .Sum(d => d.Amount);
 
-
+        //total number of transactions
         totalTransactions = allTransactions.Count;
 
-        // Calculate net flow (Credits + Debts - Debits)
+        // total transactions (credits + debts - debits)
         netFlow = totalCredits + totalPendingDebt - totalDebits;
     }
 }

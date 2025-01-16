@@ -100,7 +100,8 @@
 @code {
     private TransactionModel transactionModel = new(); //declare transactionmodel to store form data
     private string errorMessage; //declare error message
-    //private Dictionary<string, bool> selectedTags = new(); //declare dictionary to keep selected tag
+    
+    //variables for input values
     private string selectedTag = "";
     private string customTag = "";
     private bool showCustomTagInput = false;
@@ -112,24 +113,16 @@
         "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
     };
 
-    //initialize selected tag dictionary
-    // protected override void OnInitialized()
-    // {
-    //     foreach (var tag in DefaultTags)
-    //     {
-    //         selectedTags[tag] = false; no tag is selected by default
-    //     }
-    // }
-
     private void OnTagSelectionChanged(ChangeEventArgs e)
     {
         selectedTag = e.Value?.ToString() ?? "";
         showCustomTagInput = selectedTag == "Other";
+
         if (!showCustomTagInput)
         {
-            customTag = ""; // Clear custom tag when a predefined tag is selected
+            customTag = ""; //clear custom tag when a predefined tag is selected
         }
-        StateHasChanged(); // Ensure the UI updates
+        StateHasChanged(); //updating UI
     }
 
     //method to gandle submission of form
@@ -155,7 +148,6 @@
                     Type = transactionModel.Type,
                     Date = transactionModel.Date,
                     Notes = transactionModel.Notes,
-                    //Tags = selectedTags.Where(t => t.Value).Select(t => t.Key).ToList() //selects tags whose value is true an converts to list
                     Tags = new List<string> { finalTag }
                 };
 

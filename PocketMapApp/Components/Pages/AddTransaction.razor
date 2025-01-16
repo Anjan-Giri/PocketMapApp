@@ -6,67 +6,96 @@
 @using System.ComponentModel.DataAnnotations
 @using PocketMapApp.Models
 
-<h3>Add Transaction</h3>
-
-<EditForm Model="@transactionModel" OnValidSubmit="HandleSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger">@errorMessage</div>
+<style>
+    .purple-gradient {
+        background: linear-gradient(to right, #ededed, #e8e8e8);
     }
 
-    <div class="form-group mb-3">
-        <label>Title:</label>
-        <InputText @bind-Value="transactionModel.Title" class="form-control" />
-    </div>
+    .form-control:focus, .form-select:focus {
+        border-color: #30003b;
+        box-shadow: 0 0 0 0.25rem rgba(20, 0, 24, 0.1);
+    }
+</style>
 
-    <div class="form-group mb-3">
-        <label>Amount (@AuthState.CurrentUser?.PreferredCurrency):</label>
-        <InputNumber @bind-Value="transactionModel.Amount" class="form-control" />
-    </div>
+<div class="min-vh-100 bg-light py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-8">
+                <div class="card shadow border-0">
+                    <div class="card-header purple-gradient border-0">
+                        <h2 class="text-dark mb-2 mt-2">Add Transaction</h2>
+                    </div>
 
-    <div class="form-group mb-3">
-        <label>Type:</label>
-        <InputSelect @bind-Value="transactionModel.Type" class="form-control">
-            <option value="@TransactionType.Credit">Credit</option>
-            <option value="@TransactionType.Debit">Debit</option>
-        </InputSelect>
-    </div>
+                    <div class="card-body p-4">
+                        <EditForm Model="@transactionModel" OnValidSubmit="HandleSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger mb-4" />
 
-    <div class="form-group mb-3">
-        <label>Date:</label>
-        <InputDate @bind-Value="transactionModel.Date" class="form-control" />
-    </div>
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger">@errorMessage</div>
+                            }
 
-    <div class="form-group mb-3">
-        <label>Tag:</label>
-        <select class="form-control" value="@selectedTag" @onchange="OnTagSelectionChanged">
-            <option value="">Select a tag</option>
-            @foreach (var tag in DefaultTags)
-            {
-                <option value="@tag">@tag</option>
-            }
-            <option value="Other">Other</option>
-        </select>
-    </div>
+                            <div class="mb-3">
+                                <label class="form-label">Title:</label>
+                                <InputText @bind-Value="transactionModel.Title" class="form-control" />
+                            </div>
 
-    @if (showCustomTagInput)
-    {
-        <div class="form-group mb-3">
-            <label>Custom Tag:</label>
-            <input type="text" class="form-control" @bind="customTag" @bind:event="oninput" />
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Amount (@AuthState.CurrentUser?.PreferredCurrency):</label>
+                                    <InputNumber @bind-Value="transactionModel.Amount" class="form-control" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Type:</label>
+                                    <InputSelect @bind-Value="transactionModel.Type" class="form-select">
+                                        <option value="@TransactionType.Credit">Credit</option>
+                                        <option value="@TransactionType.Debit">Debit</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Date:</label>
+                                    <InputDate @bind-Value="transactionModel.Date" class="form-control" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tag:</label>
+                                    <select class="form-select" value="@selectedTag" @onchange="OnTagSelectionChanged">
+                                        <option value="">Select a tag</option>
+                                        @foreach (var tag in DefaultTags)
+                                        {
+                                            <option value="@tag">@tag</option>
+                                        }
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            @if (showCustomTagInput)
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label">Custom Tag:</label>
+                                    <input type="text" class="form-control" @bind="customTag" @bind:event="oninput" />
+                                </div>
+                            }
+
+                            <div class="mb-3">
+                                <label class="form-label">Notes:</label>
+                                <InputTextArea @bind-Value="transactionModel.Notes" class="form-control" rows="4" />
+                            </div>
+
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="submit" class="btn px-4 text-white" style="background-color: #30003b; border-color: #4338ca;">Add Transaction</button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
         </div>
-    }
-
-    <div class="form-group mb-3">
-        <label>Notes:</label>
-        <InputTextArea @bind-Value="transactionModel.Notes" class="form-control" />
     </div>
-
-    <button type="submit" class="btn btn-primary">Add Transaction</button>
-</EditForm>
+</div>
 
 @code {
     private TransactionModel transactionModel = new(); //declare transactionmodel to store form data

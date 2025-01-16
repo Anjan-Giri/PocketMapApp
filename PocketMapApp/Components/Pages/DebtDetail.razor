@@ -9,7 +9,7 @@
 @inject NavigationManager NavigationManager
 
 <div class="container mt-4">
-    <h2>Debt History</h2>
+    <h2 class="mb-3">Debt Details</h2>
 
     <!-- Filters -->
     <div class="row mb-4">
@@ -41,7 +41,7 @@
             <label>Sort By:</label>
             <select class="form-select" @bind="sortBy" @bind:after="ApplyFilters">
                 <option value="dueDate_asc">Due Date (Earliest First)</option>
-                <option value="dueDate_desc">Due Date (Latest First)</option>
+                <option value="dueDate_desc">Due Date (Farthest First)</option>
                 <option value="amount_desc">Amount (Highest First)</option>
                 <option value="amount_asc">Amount (Lowest First)</option>
             </select>

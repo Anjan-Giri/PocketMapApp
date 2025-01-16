@@ -6,39 +6,67 @@
 @using System.ComponentModel.DataAnnotations
 @using PocketMapApp.Models
 
-<h3>Add Debt</h3>
-
-<EditForm Model="@debtModel" OnValidSubmit="HandleSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger">@errorMessage</div>
+<style>
+    .purple-gradient {
+        background: linear-gradient(to right, #ededed, #e8e8e8);
     }
 
-    <div class="form-group mb-3">
-        <label>Source:</label>
-        <InputText @bind-Value="debtModel.Source" class="form-control" />
-    </div>
+    .form-control:focus, .form-select:focus {
+        border-color: #30003b;
+        box-shadow: 0 0 0 0.25rem rgba(20, 0, 24, 0.1);
+    }
+</style>
 
-    <div class="form-group mb-3">
-        <label>Amount (@AuthState.CurrentUser?.PreferredCurrency):</label>
-        <InputNumber @bind-Value="debtModel.Amount" class="form-control" />
-    </div>
+<div class="min-vh-100 bg-light py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-8">
+                <div class="card shadow border-0">
+                    <div class="card-header purple-gradient border-0">
+                        <h2 class="text-dark mb-2 mt-2">Add Debt</h2>
+                    </div>
 
-    <div class="form-group mb-3">
-        <label>Due Date:</label>
-        <InputDate @bind-Value="debtModel.DueDate" class="form-control" />
-    </div>
+                    <div class="card-body p-4">
+                        <EditForm Model="@debtModel" OnValidSubmit="HandleSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger mb-4" />
 
-    <div class="form-group mb-3">
-        <label>Notes:</label>
-        <InputTextArea @bind-Value="debtModel.Notes" class="form-control" />
-    </div>
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger">@errorMessage</div>
+                            }
 
-    <button type="submit" class="btn btn-primary">Add Debt</button>
-</EditForm>
+                            <div class="mb-3">
+                                <label class="form-label">Source:</label>
+                                <InputText @bind-Value="debtModel.Source" class="form-control" />
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Amount (@AuthState.CurrentUser?.PreferredCurrency):</label>
+                                    <InputNumber @bind-Value="debtModel.Amount" class="form-control" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Due Date:</label>
+                                    <InputDate @bind-Value="debtModel.DueDate" class="form-control" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Notes:</label>
+                                <InputTextArea @bind-Value="debtModel.Notes" class="form-control" rows="4" />
+                            </div>
+
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="submit" class="btn px-4 text-white" style="background-color: #30003b; border-color: #30003b;">Add Debt</button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     private DebtModel debtModel = new(); //declare debtmodel to store form data
